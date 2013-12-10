@@ -27,6 +27,7 @@
 
 #include "VideoSinkGStreamer.h"
 
+#include "GStreamerUtilities.h"
 #include <stdbool.h>
 #include <gst/gst.h>
 #include <gst/video/gstvideometa.h>
