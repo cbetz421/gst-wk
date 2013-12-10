@@ -19,10 +19,15 @@
 #ifndef GStreamerUtilities_h
 #define GStreamerUtilities_h
 
+#include <stdbool.h>
 #include <gst/gst.h>
 #include <gst/video/video.h>
 
-bool getVideoSizeAndFormatFromCaps(GstCaps*, WebCore::IntSize&, GstVideoFormat&, int& pixelAspectRatioNumerator, int& pixelAspectRatioDenominator, int& stride);
+typedef struct {
+    int Width; int Height;
+} IntSize;
+
+bool getVideoSizeAndFormatFromCaps(GstCaps*, IntSize*, GstVideoFormat*, int* pixelAspectRatioNumerator, int* pixelAspectRatioDenominator, int* stride);
 GstBuffer* createGstBuffer(GstBuffer*);
 
 #endif

@@ -21,19 +21,19 @@
 
 #include <gst/gst.h>
 
-bool getVideoSizeAndFormatFromCaps(GstCaps* caps, WebCore::IntSize& size, GstVideoFormat& format, int& pixelAspectRatioNumerator, int& pixelAspectRatioDenominator, int& stride)
+bool getVideoSizeAndFormatFromCaps(GstCaps* caps, IntSize* size, GstVideoFormat* format, int* pixelAspectRatioNumerator, int* pixelAspectRatioDenominator, int* stride)
 {
     GstVideoInfo info;
 
     if (!gst_caps_is_fixed(caps) || !gst_video_info_from_caps(&info, caps))
         return false;
 
-    format = GST_VIDEO_INFO_FORMAT(&info);
-    size.setWidth(GST_VIDEO_INFO_WIDTH(&info));
-    size.setHeight(GST_VIDEO_INFO_HEIGHT(&info));
-    pixelAspectRatioNumerator = GST_VIDEO_INFO_PAR_N(&info);
-    pixelAspectRatioDenominator = GST_VIDEO_INFO_PAR_D(&info);
-    stride = GST_VIDEO_INFO_PLANE_STRIDE(&info, 0);
+    *format = GST_VIDEO_INFO_FORMAT(&info);
+    size->Width = GST_VIDEO_INFO_WIDTH(&info);
+    size->Height = GST_VIDEO_INFO_HEIGHT(&info);
+    *pixelAspectRatioNumerator = GST_VIDEO_INFO_PAR_N(&info);
+    *pixelAspectRatioDenominator = GST_VIDEO_INFO_PAR_D(&info);
+    *stride = GST_VIDEO_INFO_PLANE_STRIDE(&info, 0);
 
     return true;
 }
@@ -46,6 +46,6 @@ GstBuffer* createGstBuffer(GstBuffer* buffer)
     if (!newBuffer)
         return 0;
 
-    gst_buffer_copy_into(newBuffer, buffer, static_cast<GstBufferCopyFlags>(GST_BUFFER_COPY_METADATA), 0, bufferSize);
+    gst_buffer_copy_into(newBuffer, buffer, GST_BUFFER_COPY_METADATA, 0, bufferSize);
     return newBuffer;
 }
