@@ -146,7 +146,7 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
     GstVideoFormat format;
     IntSize size;
     int pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride;
-    if (!getVideoSizeAndFormatFromCaps(caps, size, format, pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride)) {
+    if (!getVideoSizeAndFormatFromCaps(caps, &size, &format, &pixelAspectRatioNumerator, &pixelAspectRatioDenominator, &stride)) {
         gst_caps_unref(caps);
         gst_buffer_unref(buffer);
         g_mutex_unlock(&priv->bufferMutex);
