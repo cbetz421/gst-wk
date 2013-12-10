@@ -135,21 +135,24 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
 
     priv->buffer = gst_buffer_ref(buffer);
 
-    GRefPtr<GstCaps> caps;
+    GstCaps* caps;
     // The video info structure is valid only if the sink handled an allocation query.
     if (GST_VIDEO_INFO_FORMAT(&priv->info) != GST_VIDEO_FORMAT_UNKNOWN)
-        caps = adoptGRef(gst_video_info_to_caps(&priv->info));
+        caps = gst_video_info_to_caps(&priv->info);
     else
         caps = priv->currentCaps;
 
     GstVideoFormat format;
     WebCore::IntSize size;
     int pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride;
-    if (!getVideoSizeAndFormatFromCaps(caps.get(), size, format, pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride)) {
+    if (!getVideoSizeAndFormatFromCaps(caps, size, format, pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride)) {
+        gst_caps_unref(caps);
         gst_buffer_unref(buffer);
         g_mutex_unlock(&priv->bufferMutex);
         return GST_FLOW_ERROR;
     }
+
+    gst_caps_unref(caps);
 
     // Cairo's ARGB has pre-multiplied alpha while GStreamer's doesn't.
     // Here we convert to Cairo's ARGB.
