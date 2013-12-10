@@ -107,7 +107,7 @@ static gboolean webkitVideoSinkTimeoutCallback(gpointer data)
     priv->buffer = 0;
     priv->timeoutId = 0;
 
-    if (!buffer || priv->unlocked || UNLIKELY(!GST_IS_BUFFER(buffer))) {
+    if (!buffer || priv->unlocked || G_UNLIKELY(!GST_IS_BUFFER(buffer))) {
         g_cond_signal(&priv->dataCondition);
         g_mutex_unlock(&priv->bufferMutex);
         return FALSE;
@@ -162,7 +162,7 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
         GstBuffer* newBuffer = WebCore::createGstBuffer(buffer);
 
         // Check if allocation failed.
-        if (UNLIKELY(!newBuffer)) {
+        if (G_UNLIKELY(!newBuffer)) {
             g_mutex_unlock(&priv->bufferMutex);
             return GST_FLOW_ERROR;
         }
