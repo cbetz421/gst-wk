@@ -144,7 +144,7 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
         caps = priv->currentCaps;
 
     GstVideoFormat format;
-    WebCore::IntSize size;
+    IntSize size;
     int pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride;
     if (!getVideoSizeAndFormatFromCaps(caps, size, format, pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride)) {
         gst_caps_unref(caps);
@@ -163,7 +163,7 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
         // The buffer content should not be changed here because the same buffer
         // could be passed multiple times to this method (in theory).
 
-        GstBuffer* newBuffer = WebCore::createGstBuffer(buffer);
+        GstBuffer* newBuffer = createGstBuffer(buffer);
 
         // Check if allocation failed.
         if (G_UNLIKELY(!newBuffer)) {
