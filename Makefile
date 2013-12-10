@@ -3,8 +3,8 @@ LDFLAGS := -Wl,--no-undefined -Wl,--as-needed
 
 override CFLAGS += -D_GNU_SOURCE -DGST_DISABLE_DEPRECATED
 
-GST_CFLAGS := $(shell pkg-config --cflags gstreamer-1.0 gstreamer-base-1.0)
-GST_LIBS := $(shell pkg-config --libs gstreamer-1.0 gstreamer-base-1.0)
+GST_CFLAGS := $(shell pkg-config --cflags gstreamer-1.0 gstreamer-base-1.0 gstreamer-video-1.0)
+GST_LIBS := $(shell pkg-config --libs gstreamer-1.0 gstreamer-base-1.0  gstreamer-video-1.0)
 
 all:
 
