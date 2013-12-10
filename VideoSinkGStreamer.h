@@ -51,6 +51,6 @@ struct _WebKitVideoSinkClass {
     void (* _webkit_reserved6)(void);
 };
 
-GType webkit_video_sink_get_type() G_GNUC_CONST;
+GType webkit_video_sink_get_type(void) G_GNUC_CONST;
 
 #endif
