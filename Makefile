@@ -15,7 +15,7 @@ D = $(DESTDIR)$(pluginsdir)
 
 # plugin
 
-libgstwk.so: gstwksink.o
+libgstwk.so: VideoSinkGStreamer.o
 libgstwk.so: override CFLAGS += $(GST_CFLAGS) -fPIC \
 	-D VERSION='"$(version)"' -I./include
 libgstwk.so: override LIBS += $(GST_LIBS)
