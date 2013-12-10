@@ -85,6 +85,9 @@ struct _WebKitVideoSinkPrivate {
     bool unlocked;
 };
 
+#define webkit_video_sink_parent_class parent_class
+G_DEFINE_TYPE_WITH_CODE(WebKitVideoSink, webkit_video_sink, GST_TYPE_VIDEO_SINK, GST_DEBUG_CATEGORY_INIT(webkitVideoSinkDebug, "webkitsink", 0, "webkit video sink"))
+
 static void webkit_video_sink_init(WebKitVideoSink* sink)
 {
     sink->priv = G_TYPE_INSTANCE_GET_PRIVATE(sink, WEBKIT_TYPE_VIDEO_SINK, WebKitVideoSinkPrivate);
@@ -94,9 +97,6 @@ static void webkit_video_sink_init(WebKitVideoSink* sink)
 
     gst_video_info_init(&sink->priv->info);
 }
-
-#define webkit_video_sink_parent_class parent_class
-G_DEFINE_TYPE_WITH_CODE(WebKitVideoSink, webkit_video_sink, GST_TYPE_VIDEO_SINK, GST_DEBUG_CATEGORY_INIT(webkitVideoSinkDebug, "webkitsink", 0, "webkit video sink"));
 
 static gboolean webkitVideoSinkTimeoutCallback(gpointer data)
 {
