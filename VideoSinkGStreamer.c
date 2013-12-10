@@ -182,8 +182,8 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
         gst_buffer_map(newBuffer, &destinationInfo, GST_MAP_WRITE);
         guint8* destination = destinationInfo.data;
 
-        for (int x = 0; x < size.height(); x++) {
-            for (int y = 0; y < size.width(); y++) {
+        for (int x = 0; x < size.Height; x++) {
+            for (int y = 0; y < size.Width; y++) {
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
                 unsigned short alpha = source[3];
                 destination[0] = (source[0] * alpha + 128) / 255;
