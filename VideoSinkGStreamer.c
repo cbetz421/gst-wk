@@ -25,17 +25,10 @@
  * current video buffer.
  */
 
-#include "config.h"
 #include "VideoSinkGStreamer.h"
 
-#if ENABLE(VIDEO) && USE(GSTREAMER)
-#include "GRefPtrGStreamer.h"
-#include "GStreamerUtilities.h"
-#include "IntSize.h"
-#include <glib.h>
 #include <gst/gst.h>
 #include <gst/video/gstvideometa.h>
-#include <wtf/OwnPtr.h>
 
 // CAIRO_FORMAT_RGB24 used to render the video buffers is little/big endian dependant.
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
@@ -407,11 +400,3 @@ static void webkit_video_sink_class_init(WebKitVideoSinkClass* klass)
             1, // Only one parameter
             GST_TYPE_BUFFER);
 }
-
-
-GstElement* webkitVideoSinkNew()
-{
-    return GST_ELEMENT(g_object_new(WEBKIT_TYPE_VIDEO_SINK, 0));
-}
-
-#endif // ENABLE(VIDEO) && USE(GSTREAMER)

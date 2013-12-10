@@ -20,9 +20,6 @@
 #ifndef VideoSinkGStreamer_h
 #define VideoSinkGStreamer_h
 
-#if ENABLE(VIDEO) && USE(GSTREAMER)
-
-#include <glib-object.h>
 #include <gst/video/gstvideosink.h>
 
 #define WEBKIT_TYPE_VIDEO_SINK webkit_video_sink_get_type()
@@ -56,7 +53,4 @@ struct _WebKitVideoSinkClass {
 
 GType webkit_video_sink_get_type() G_GNUC_CONST;
 
-GstElement* webkitVideoSinkNew();
-
-#endif // USE(GSTREAMER)
 #endif
