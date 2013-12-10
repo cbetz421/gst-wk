@@ -99,7 +99,7 @@ G_DEFINE_TYPE_WITH_CODE(WebKitVideoSink, webkit_video_sink, GST_TYPE_VIDEO_SINK,
 
 static gboolean webkitVideoSinkTimeoutCallback(gpointer data)
 {
-    WebKitVideoSink* sink = reinterpret_cast<WebKitVideoSink*>(data);
+    WebKitVideoSink* sink = data;
     WebKitVideoSinkPrivate* priv = sink->priv;
 
     g_mutex_lock(&priv->bufferMutex);
@@ -174,9 +174,9 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
         GstMapInfo sourceInfo;
         GstMapInfo destinationInfo;
         gst_buffer_map(buffer, &sourceInfo, GST_MAP_READ);
-        const guint8* source = const_cast<guint8*>(sourceInfo.data);
+        const guint8* source = sourceInfo.data;
         gst_buffer_map(newBuffer, &destinationInfo, GST_MAP_WRITE);
-        guint8* destination = static_cast<guint8*>(destinationInfo.data);
+        guint8* destination = destinationInfo.data;
 
         for (int x = 0; x < size.height(); x++) {
             for (int y = 0; y < size.width(); y++) {
@@ -208,7 +208,7 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
     // lower priority sources.
     // See: https://bugzilla.gnome.org/show_bug.cgi?id=610830.
     priv->timeoutId = g_timeout_add_full(G_PRIORITY_DEFAULT, 0, webkitVideoSinkTimeoutCallback,
-                                          gst_object_ref(sink), reinterpret_cast<GDestroyNotify>(gst_object_unref));
+                                         gst_object_ref(sink), (GDestroyNotify) gst_object_unref);
     g_source_set_name_by_id(priv->timeoutId, "[WebKit] webkitVideoSinkTimeoutCallback");
 
     g_cond_wait(&priv->dataCondition, &priv->bufferMutex);
@@ -368,7 +368,7 @@ static void webkit_video_sink_class_init(WebKitVideoSinkClass* klass)
 
     webkitVideoSinkSignals[REPAINT_REQUESTED] = g_signal_new("repaint-requested",
             G_TYPE_FROM_CLASS(klass),
-            static_cast<GSignalFlags>(G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION),
+            G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
             0, // Class offset
             0, // Accumulator
             0, // Accumulator data
