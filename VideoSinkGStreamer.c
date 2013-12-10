@@ -66,8 +66,8 @@ static guint webkitVideoSinkSignals[LAST_SIGNAL] = { 0, };
 struct _WebKitVideoSinkPrivate {
     GstBuffer* buffer;
     guint timeoutId;
-    GMutex* bufferMutex;
-    GCond* dataCondition;
+    GMutex bufferMutex;
+    GCond dataCondition;
 
     GstVideoInfo info;
 
@@ -87,15 +87,9 @@ struct _WebKitVideoSinkPrivate {
 static void webkit_video_sink_init(WebKitVideoSink* sink)
 {
     sink->priv = G_TYPE_INSTANCE_GET_PRIVATE(sink, WEBKIT_TYPE_VIDEO_SINK, WebKitVideoSinkPrivate);
-#if GLIB_CHECK_VERSION(2, 31, 0)
-    sink->priv->dataCondition = new GCond;
-    g_cond_init(sink->priv->dataCondition);
-    sink->priv->bufferMutex = new GMutex;
-    g_mutex_init(sink->priv->bufferMutex);
-#else
-    sink->priv->dataCondition = g_cond_new();
-    sink->priv->bufferMutex = g_mutex_new();
-#endif
+
+    g_cond_init(&sink->priv->dataCondition);
+    g_mutex_init(&sink->priv->bufferMutex);
 
     gst_video_info_init(&sink->priv->info);
 }
@@ -108,21 +102,21 @@ static gboolean webkitVideoSinkTimeoutCallback(gpointer data)
     WebKitVideoSink* sink = reinterpret_cast<WebKitVideoSink*>(data);
     WebKitVideoSinkPrivate* priv = sink->priv;
 
-    g_mutex_lock(priv->bufferMutex);
+    g_mutex_lock(&priv->bufferMutex);
     GstBuffer* buffer = priv->buffer;
     priv->buffer = 0;
     priv->timeoutId = 0;
 
     if (!buffer || priv->unlocked || UNLIKELY(!GST_IS_BUFFER(buffer))) {
-        g_cond_signal(priv->dataCondition);
-        g_mutex_unlock(priv->bufferMutex);
+        g_cond_signal(&priv->dataCondition);
+        g_mutex_unlock(&priv->bufferMutex);
         return FALSE;
     }
 
     g_signal_emit(sink, webkitVideoSinkSignals[REPAINT_REQUESTED], 0, buffer);
     gst_buffer_unref(buffer);
-    g_cond_signal(priv->dataCondition);
-    g_mutex_unlock(priv->bufferMutex);
+    g_cond_signal(&priv->dataCondition);
+    g_mutex_unlock(&priv->bufferMutex);
 
     return FALSE;
 }
@@ -132,10 +126,10 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
     WebKitVideoSink* sink = WEBKIT_VIDEO_SINK(baseSink);
     WebKitVideoSinkPrivate* priv = sink->priv;
 
-    g_mutex_lock(priv->bufferMutex);
+    g_mutex_lock(&priv->bufferMutex);
 
     if (priv->unlocked) {
-        g_mutex_unlock(priv->bufferMutex);
+        g_mutex_unlock(&priv->bufferMutex);
         return GST_FLOW_OK;
     }
 
@@ -153,7 +147,7 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
     int pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride;
     if (!getVideoSizeAndFormatFromCaps(caps.get(), size, format, pixelAspectRatioNumerator, pixelAspectRatioDenominator, stride)) {
         gst_buffer_unref(buffer);
-        g_mutex_unlock(priv->bufferMutex);
+        g_mutex_unlock(&priv->bufferMutex);
         return GST_FLOW_ERROR;
     }
 
@@ -169,7 +163,7 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
 
         // Check if allocation failed.
         if (UNLIKELY(!newBuffer)) {
-            g_mutex_unlock(priv->bufferMutex);
+            g_mutex_unlock(&priv->bufferMutex);
             return GST_FLOW_ERROR;
         }
 
@@ -217,8 +211,8 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
                                           gst_object_ref(sink), reinterpret_cast<GDestroyNotify>(gst_object_unref));
     g_source_set_name_by_id(priv->timeoutId, "[WebKit] webkitVideoSinkTimeoutCallback");
 
-    g_cond_wait(priv->dataCondition, priv->bufferMutex);
-    g_mutex_unlock(priv->bufferMutex);
+    g_cond_wait(&priv->dataCondition, &priv->bufferMutex);
+    g_mutex_unlock(&priv->bufferMutex);
     return GST_FLOW_OK;
 }
 
@@ -227,25 +221,8 @@ static void webkitVideoSinkDispose(GObject* object)
     WebKitVideoSink* sink = WEBKIT_VIDEO_SINK(object);
     WebKitVideoSinkPrivate* priv = sink->priv;
 
-    if (priv->dataCondition) {
-#if GLIB_CHECK_VERSION(2, 31, 0)
-        g_cond_clear(priv->dataCondition);
-        delete priv->dataCondition;
-#else
-        g_cond_free(priv->dataCondition);
-#endif
-        priv->dataCondition = 0;
-    }
-
-    if (priv->bufferMutex) {
-#if GLIB_CHECK_VERSION(2, 31, 0)
-        g_mutex_clear(priv->bufferMutex);
-        delete priv->bufferMutex;
-#else
-        g_mutex_free(priv->bufferMutex);
-#endif
-        priv->bufferMutex = 0;
-    }
+    g_cond_clear(&priv->dataCondition);
+    g_mutex_clear(&priv->bufferMutex);
 
     G_OBJECT_CLASS(parent_class)->dispose(object);
 }
@@ -270,7 +247,7 @@ static void webkitVideoSinkGetProperty(GObject* object, guint propertyId, GValue
 
 static void unlockBufferMutex(WebKitVideoSinkPrivate* priv)
 {
-    g_mutex_lock(priv->bufferMutex);
+    g_mutex_lock(&priv->bufferMutex);
 
     if (priv->buffer) {
         gst_buffer_unref(priv->buffer);
@@ -279,8 +256,8 @@ static void unlockBufferMutex(WebKitVideoSinkPrivate* priv)
 
     priv->unlocked = true;
 
-    g_cond_signal(priv->dataCondition);
-    g_mutex_unlock(priv->bufferMutex);
+    g_cond_signal(&priv->dataCondition);
+    g_mutex_unlock(&priv->bufferMutex);
 }
 
 static gboolean webkitVideoSinkUnlock(GstBaseSink* baseSink)
@@ -296,9 +273,9 @@ static gboolean webkitVideoSinkUnlockStop(GstBaseSink* baseSink)
 {
     WebKitVideoSinkPrivate* priv = WEBKIT_VIDEO_SINK(baseSink)->priv;
 
-    g_mutex_lock(priv->bufferMutex);
+    g_mutex_lock(&priv->bufferMutex);
     priv->unlocked = false;
-    g_mutex_unlock(priv->bufferMutex);
+    g_mutex_unlock(&priv->bufferMutex);
 
     return GST_CALL_PARENT_WITH_DEFAULT(GST_BASE_SINK_CLASS, unlock_stop, (baseSink), TRUE);
 }
@@ -321,9 +298,9 @@ static gboolean webkitVideoSinkStart(GstBaseSink* baseSink)
 {
     WebKitVideoSinkPrivate* priv = WEBKIT_VIDEO_SINK(baseSink)->priv;
 
-    g_mutex_lock(priv->bufferMutex);
+    g_mutex_lock(&priv->bufferMutex);
     priv->unlocked = false;
-    g_mutex_unlock(priv->bufferMutex);
+    g_mutex_unlock(&priv->bufferMutex);
     return TRUE;
 }
 
