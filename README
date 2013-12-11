@@ -1,0 +1,3 @@
+I had extracted the WebKit's video sink and set it as an isolated
+plugin, which I could use in arbirary pipelines. The purpose of this
+is to avoid to launch WebKit for simple development-test cycles.
