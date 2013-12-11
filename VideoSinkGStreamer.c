@@ -381,19 +381,3 @@ static void webkit_video_sink_class_init(WebKitVideoSinkClass* klass)
             1, // Only one parameter
             GST_TYPE_BUFFER);
 }
-
-static gboolean webkit_plugin_init (GstPlugin* plugin)
-{
-    return gst_element_register(plugin, "wkvideosink", GST_RANK_PRIMARY, WEBKIT_TYPE_VIDEO_SINK);
-}
-
-GstPluginDesc gst_plugin_desc = {
-    .major_version = 1,
-    .minor_version = 3,
-    .name = "wkvideosink",
-    .description = "simulated WebKit video sink",
-    .plugin_init = webkit_plugin_init,
-    .version = VERSION,
-    .license = "LGPL",
-    .package = "gstwk",
-};
