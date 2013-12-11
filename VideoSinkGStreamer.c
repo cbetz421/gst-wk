@@ -29,6 +29,7 @@
 
 #include "GStreamerUtilities.h"
 #include <stdbool.h>
+#include <string.h>
 #include <gst/gst.h>
 #include <gst/video/gstvideometa.h>
 
@@ -84,6 +85,60 @@ struct _WebKitVideoSinkPrivate {
     // Protected by the buffer mutex
     bool unlocked;
 };
+
+static void print_buffer_metadata(WebKitVideoSink* sink, GstBuffer* buffer)
+{
+    gchar dts_str[64], pts_str[64], dur_str[64];
+    gchar flag_str[100];
+
+    if (GST_BUFFER_DTS (buffer) != GST_CLOCK_TIME_NONE) {
+        g_snprintf (dts_str, sizeof (dts_str), "%" GST_TIME_FORMAT,
+                    GST_TIME_ARGS (GST_BUFFER_DTS (buffer)));
+    } else {
+        g_strlcpy (dts_str, "none", sizeof (dts_str));
+    }
+
+    if (GST_BUFFER_PTS (buffer) != GST_CLOCK_TIME_NONE) {
+        g_snprintf (pts_str, sizeof (pts_str), "%" GST_TIME_FORMAT,
+                    GST_TIME_ARGS (GST_BUFFER_PTS (buffer)));
+    } else {
+        g_strlcpy (pts_str, "none", sizeof (pts_str));
+    }
+
+    if (GST_BUFFER_DURATION (buffer) != GST_CLOCK_TIME_NONE) {
+        g_snprintf (dur_str, sizeof (dur_str), "%" GST_TIME_FORMAT,
+                    GST_TIME_ARGS (GST_BUFFER_DURATION (buffer)));
+    } else {
+        g_strlcpy (dur_str, "none", sizeof (dur_str));
+    }
+
+    {
+        const char *flag_list[15] = {
+            "", "", "", "", "live", "decode-only", "discont", "resync", "corrupted",
+            "marker", "header", "gap", "droppable", "delta-unit", "in-caps"
+        };
+        guint i;
+        char *end = flag_str;
+        end[0] = '\0';
+        for (i = 0; i < G_N_ELEMENTS (flag_list); i++) {
+            if (GST_MINI_OBJECT_CAST (buffer)->flags & (1 << i)) {
+                strcpy (end, flag_list[i]);
+                end += strlen (end);
+                end[0] = ' ';
+                end[1] = '\0';
+                end++;
+            }
+        }
+    }
+
+    g_printerr ("chain   ******* (%s:%s) (%u bytes, dts: %s, pts: %s"
+                ", duration: %s, offset: %" G_GINT64_FORMAT ", offset_end: %"
+                G_GINT64_FORMAT ", flags: %08x %s) %p\n",
+                    GST_DEBUG_PAD_NAME (GST_BASE_SINK_CAST (sink)->sinkpad),
+                (guint) gst_buffer_get_size (buffer), dts_str, pts_str,
+                dur_str, GST_BUFFER_OFFSET (buffer), GST_BUFFER_OFFSET_END (buffer),
+                GST_MINI_OBJECT_CAST (buffer)->flags, flag_str, buffer);
+}
 
 #define webkit_video_sink_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE(WebKitVideoSink, webkit_video_sink, GST_TYPE_VIDEO_SINK, GST_DEBUG_CATEGORY_INIT(webkitVideoSinkDebug, "webkitsink", 0, "webkit video sink"))
@@ -214,6 +269,8 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
     priv->timeoutId = g_timeout_add_full(G_PRIORITY_DEFAULT, 0, webkitVideoSinkTimeoutCallback,
                                          gst_object_ref(sink), (GDestroyNotify) gst_object_unref);
     g_source_set_name_by_id(priv->timeoutId, "[WebKit] webkitVideoSinkTimeoutCallback");
+
+    print_buffer_metadata(sink, buffer);
 
     g_cond_wait(&priv->dataCondition, &priv->bufferMutex);
     g_mutex_unlock(&priv->bufferMutex);
