@@ -83,6 +83,8 @@ static GstElement* createVideoSink(MediaPlayerPrivateGStreamer *m)
     GstElement* videoSink = NULL;
 
     m->webkitVideoSink = gst_element_factory_make("wkvsink", "wkvsink");
+    assert(m->webkitVideoSink);
+    g_object_set(m->webkitVideoSink, "silent", TRUE, NULL);
     m->repaintHandler = g_signal_connect(m->webkitVideoSink, "repaint-requested", G_CALLBACK(mediaPlayerPrivateRepaintCallback), m);
 
     m->fpsSink = gst_element_factory_make("fpsdisplaysink", "sink");

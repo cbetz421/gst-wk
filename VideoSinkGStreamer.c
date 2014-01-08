@@ -60,7 +60,8 @@ enum {
 
 enum {
     PROP_0,
-    PROP_CAPS
+    PROP_CAPS,
+    PROP_SILENT,
 };
 
 static guint webkitVideoSinkSignals[LAST_SIGNAL] = { 0, };
@@ -84,6 +85,7 @@ struct _WebKitVideoSinkPrivate {
     //
     // Protected by the buffer mutex
     bool unlocked;
+    bool silent;
 };
 
 static void print_buffer_metadata(WebKitVideoSink* sink, GstBuffer* buffer)
@@ -149,6 +151,8 @@ static void webkit_video_sink_init(WebKitVideoSink* sink)
 
     g_cond_init(&sink->priv->dataCondition);
     g_mutex_init(&sink->priv->bufferMutex);
+
+    sink->priv->silent = TRUE;
 
     gst_video_info_init(&sink->priv->info);
 }
@@ -270,7 +274,8 @@ static GstFlowReturn webkitVideoSinkRender(GstBaseSink* baseSink, GstBuffer* buf
                                          gst_object_ref(sink), (GDestroyNotify) gst_object_unref);
     g_source_set_name_by_id(priv->timeoutId, "[WebKit] webkitVideoSinkTimeoutCallback");
 
-    print_buffer_metadata(sink, buffer);
+    if (!priv->silent)
+        print_buffer_metadata(sink, buffer);
 
     g_cond_wait(&priv->dataCondition, &priv->bufferMutex);
     g_mutex_unlock(&priv->bufferMutex);
@@ -301,6 +306,23 @@ static void webkitVideoSinkGetProperty(GObject* object, guint propertyId, GValue
         g_value_take_boxed(value, caps);
         break;
     }
+    case PROP_SILENT:
+        g_value_set_boolean(value, priv->silent);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, propertyId, parameterSpec);
+    }
+}
+
+static void webkitVideoSinkSetProperty(GObject* object, guint propertyId, const GValue *value, GParamSpec* parameterSpec)
+{
+    WebKitVideoSink* sink = WEBKIT_VIDEO_SINK(object);
+    WebKitVideoSinkPrivate* priv = sink->priv;
+
+    switch (propertyId) {
+    case PROP_SILENT:
+        priv->silent = g_value_get_boolean(value);
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, propertyId, parameterSpec);
     }
@@ -414,6 +436,7 @@ static void webkit_video_sink_class_init(WebKitVideoSinkClass* klass)
 
     gobjectClass->dispose = webkitVideoSinkDispose;
     gobjectClass->get_property = webkitVideoSinkGetProperty;
+    gobjectClass->set_property = webkitVideoSinkSetProperty;
 
     baseSinkClass->unlock = webkitVideoSinkUnlock;
     baseSinkClass->unlock_stop = webkitVideoSinkUnlockStop;
@@ -426,6 +449,9 @@ static void webkit_video_sink_class_init(WebKitVideoSinkClass* klass)
 
     g_object_class_install_property(gobjectClass, PROP_CAPS,
         g_param_spec_boxed("current-caps", "Current-Caps", "Current caps", GST_TYPE_CAPS, G_PARAM_READABLE));
+
+    g_object_class_install_property(gobjectClass, PROP_SILENT,
+        g_param_spec_boolean("silent", "Silent", "Silent", TRUE, G_PARAM_READWRITE));
 
     webkitVideoSinkSignals[REPAINT_REQUESTED] = g_signal_new("repaint-requested",
             G_TYPE_FROM_CLASS(klass),
