@@ -38,6 +38,17 @@ static void mediaPlayerPrivateRepaintCallback(GstElement *sink, GstBuffer *buffe
     g_printerr(".");
 }
 
+static void mediaPlayerPrivateVideoSinkCapsChangedCallback(GObject* object, GParamSpec* pspec, MediaPlayerPrivateGStreamer* m)
+{
+    GstCaps* caps = NULL;
+    g_object_get(m->webkitVideoSink, "current-caps", &caps, NULL);
+    char *str = gst_caps_to_string(caps);
+    gst_caps_unref(caps);
+    g_print("New caps in video sink = %s\n", str);
+    g_free(str);
+}
+
+
 static gboolean mediaPlayerPrivateMessageCallback(GstBus* bus, GstMessage* message, MediaPlayerPrivateGStreamer* m)
 {
     GError* err;
@@ -113,6 +124,11 @@ static void createGSTPlayBin(MediaPlayerPrivateGStreamer *m)
     g_object_unref(bus);
 
     g_object_set(m->playBin, "video-sink", createVideoSink(m), NULL);
+
+    GstPad* videoSinkPad = gst_element_get_static_pad(m->webkitVideoSink, "sink");
+    if (videoSinkPad)
+        g_signal_connect(videoSinkPad, "notify::caps", G_CALLBACK(mediaPlayerPrivateVideoSinkCapsChangedCallback), m);
+    gst_object_unref(videoSinkPad);
 }
 
 static bool changePipelineState(MediaPlayerPrivateGStreamer* m, GstState newState)
@@ -159,14 +175,15 @@ static void load(MediaPlayerPrivateGStreamer *m, const char* uri)
     g_object_set(m->playBin, "uri", uri, NULL);
 
     /* commitLoad */
-    changePipelineState(m, GST_STATE_PAUSED);
-    setDownloadBuffering(m);
+    if (changePipelineState(m, GST_STATE_PAUSED))
+        setDownloadBuffering(m);
 }
 
 static void play(MediaPlayerPrivateGStreamer *m)
 {
     if (!changePipelineState(m, GST_STATE_PLAYING)) {
         g_printerr("Play failed!\n");
+        didEnd(m);
     }
 }
 
@@ -178,6 +195,10 @@ static void destroy(MediaPlayerPrivateGStreamer *m)
 
     if (m->repaintHandler != 0)
         g_signal_handler_disconnect(m->webkitVideoSink, m->repaintHandler);
+
+    GstPad* videoSinkPad = gst_element_get_static_pad(m->webkitVideoSink, "sink");
+    g_signal_handlers_disconnect_by_func(videoSinkPad, mediaPlayerPrivateVideoSinkCapsChangedCallback, m);
+    gst_object_unref(videoSinkPad);
 
     if (m->playBin) {
         GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(GST_PIPELINE(m->playBin)));
@@ -213,7 +234,7 @@ main(int argc, char **argv)
 
     int i = 1;
     while(--argc) {
-        load(m, argv[i--]);
+        load(m, argv[i++]);
         m->loop = g_main_loop_new(NULL, TRUE);
         g_idle_add(launch, m);
         g_main_loop_run(m->loop);
