@@ -49,3 +49,15 @@ GstBuffer* createGstBuffer(GstBuffer* buffer)
     gst_buffer_copy_into(newBuffer, buffer, GST_BUFFER_COPY_METADATA, 0, bufferSize);
     return newBuffer;
 }
+
+bool initializeGStreamer(int *argc, char ***argv)
+{
+    if (gst_is_initialized())
+        return true;
+
+    GError* error;
+    bool gstInitialized = gst_init_check(argc, argv, &error);
+    if (!gstInitialized)
+        g_print("GStreamer initialization failed: %s", error ? error->message : "unknown error occurred");
+    return gstInitialized;
+}

@@ -22,7 +22,13 @@ libgstwk.so: override LIBS += $(GST_LIBS)
 
 targets += libgstwk.so
 
-all: $(targets)
+wkplayer: GStreamerUtilities.o player.o
+wkplayer: override CFLAGS += $(GST_CFLAGS)
+wkplayer: override LIBS += $(GST_LIBS)
+
+bins += wkplayer
+
+all: $(targets) $(bins)
 
 # pretty print
 ifndef V
@@ -33,6 +39,9 @@ endif
 
 install: $(targets)
 	install -m 755 -D libgstwk.so $(D)
+
+$(bins):
+	$(QUIET_LINK)$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
 
 %.o:: %.c
 	$(QUIET_CC)$(CC) $(CFLAGS) -MMD -o $@ -c $<

@@ -29,5 +29,6 @@ typedef struct {
 
 bool getVideoSizeAndFormatFromCaps(GstCaps*, IntSize*, GstVideoFormat*, int* pixelAspectRatioNumerator, int* pixelAspectRatioDenominator, int* stride);
 GstBuffer* createGstBuffer(GstBuffer*);
+bool initializeGStreamer(int *argc, char ***argv);
 
 #endif
